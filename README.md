@@ -16,7 +16,7 @@ bash automated_aws_ecr_script.sh
 
 > - **Your docker image must be named same as AWS repository**  
 > - **Login uses your local stored aws credentials**  
-> - **Script will locate your AWS config file in "home" or "root" directory depend how you start script, with or without sudo**
+> - **Script will locate your AWS config file in "~/.aws/" directory**
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
