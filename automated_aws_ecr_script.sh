@@ -16,7 +16,7 @@ echo -ne "\e[1;31m
                         https://github.com/vukilis
 
 Script for automated create, push and delete AWS ECR repositories and images.
-    Created and optimized for Datadrill Company https://www.datadrill.io/
+    Created and optimized for DataDrill Company https://www.datadrill.io/
 ----------------------------------------------------------------------------
 \e[1;33m"
 
