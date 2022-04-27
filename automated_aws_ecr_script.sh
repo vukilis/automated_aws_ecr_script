@@ -32,7 +32,7 @@ showCrawlers(){
 
     echo -e "\e[1;33m"
     echo "
-    gazzettaufficiale_biz, fda_gov, ansm_sante_fr, has_sante_fr
+    gazzettaufficiale_biz, fda_gov, ansm_sante_fr, has_sante_fr_decision_opinions, has_sante_fr_drug_decisions
     "
     echo -e "\e[1;36m"
 }
@@ -43,8 +43,8 @@ push(){
     echo "--------------------------       DOCKER PUSH      --------------------------"
     echo "----------------------------------------------------------------------------"
 
-    sudo docker tag tracking_core_$crawler:latest $AWS_ID.$ENDPOINT/$crawler:latest
-    sudo docker push $AWS_ID.$ENDPOINT/$crawler:latest
+    sudo docker tag tracking_core_$input:latest $AWS_ID.$ENDPOINT/$input:latest
+    sudo docker push $AWS_ID.$ENDPOINT/$input:latest
     echo -e "\e[1;36m"
 }
 # docker check images
@@ -54,7 +54,7 @@ checkImage(){
     echo "--------------------------       IMAGE CHECK      --------------------------"
     echo "----------------------------------------------------------------------------"
 
-    aws ecr describe-images --repository-name $crawler --image-ids imageTag=latest --output json
+    aws ecr describe-images --repository-name $input --image-ids imageTag=latest --output json
     echo -e "\e[1;36m"
 }
 #create ECR repo
@@ -64,7 +64,7 @@ createRepo(){
     echo "-----------------------       CREATE REPOSITORY      -----------------------"
     echo "----------------------------------------------------------------------------"
 
-    aws ecr create-repository --repository-name $crawler
+    aws ecr create-repository --repository-name $input
     echo -e "\e[1;36m"
 }
 # delete repo image
@@ -74,7 +74,7 @@ deleteImage(){
     echo "--------------------------       DELETE IMAGE      -------------------------"
     echo "----------------------------------------------------------------------------"
 
-    aws ecr batch-delete-image --repository-name $crawler --image-ids imageTag=latest
+    aws ecr batch-delete-image --repository-name $input --image-ids imageTag=latest
     echo -e "\e[1;36m"
 }
 # delete ECR repo
@@ -84,9 +84,52 @@ deleteRepo(){
     echo "-----------------------       DELETE REPOSITORY      -----------------------"
     echo "----------------------------------------------------------------------------"
     
-    aws ecr delete-repository --repository-name $crawler --force
+    aws ecr delete-repository --repository-name $input --force
     echo -e "\e[1;36m"
 }
+#build docker-compose
+buildCompose(){
+    echo -e "\e[1;35m"
+    echo "----------------------------------------------------------------------------"
+    echo "-------------------------      BUILD COMPOSE     ---------------------------"
+    echo "----------------------------------------------------------------------------"
+
+    sudo docker-compose -f $composeName build
+    echo -e "\e[1;36m"
+}
+#build docker-compose with args
+buildComposeArgs(){
+    echo -e "\e[1;35m"
+    echo "----------------------------------------------------------------------------"
+    echo "--------------------      BUILD COMPOSE WITH ARGS     ----------------------"
+    echo "----------------------------------------------------------------------------"
+
+    sudo docker-compose -f $composeName build $args
+    echo -e "\e[1;36m"
+}
+# delete local docker image
+deleteLocalImage(){
+    echo -e "\e[1;35m"
+    echo "----------------------------------------------------------------------------"
+    echo "----------------------      DELETE LOCAL IMAGE     -------------------------"
+    echo "----------------------------------------------------------------------------"
+
+    localID=$(sudo docker images -q $AWS_ID.$ENDPOINT/$input)
+    sudo docker rmi -f $localID
+    echo -e "\e[1;36m"
+}
+#delete docker cache
+deleteDockerCache(){
+    echo -e "\e[1;35m"
+    echo "----------------------------------------------------------------------------"
+    echo "----------------------      DELETE DOCKER CACHE     ------------------------"
+    echo "----------------------------------------------------------------------------"
+
+    sudo docker system prune --all
+    echo -e "\e[1;36m"
+}
+
+
 
 ################ AWS LOGIN ################
 
@@ -114,44 +157,89 @@ fi
 
 echo -ne "\e[1;35m
 ----------------------------------------------------------------------------
-----------------------------       OPTIONS      ----------------------------
+---------------------------       MAIN MENU      ---------------------------
 ----------------------------------------------------------------------------
 \e[1;36m"
 
 PS3="Choose your option: "
-options=("check-image" "push-image" "delete-repository-image" "create-repository" "delete-repository" "crawler-list")
+menu=("AWS OPTIONS" "DOCKER OPTIONS")
+subMenuAWS=("check-image" "push-image" "delete-repository-image" "create-repository" "delete-repository" "crawler-list")
+subMenuDOCKER=("build-compose" "build-compose-with-args" "delete-local-image" "delete-docker-cache")
 
-select option in "${options[@]}" "Quit"; do 
+select option in "${menu[@]}" "Quit"; do 
     case "$REPLY" in
     1) echo -e "\033[1;32mYou chose $option\n\033[1;36m" 
-        read -p "Enter repo name: " crawler 
-        checkImage
-        continue;;
+        select optionAWS in "${subMenuAWS[@]}" "Back"; do 
+            case "$REPLY" in
+            1) echo -e "\033[1;32mYou chose $optionAWS\n\033[1;36m" 
+                read -p "Enter repo name: " input 
+                checkImage
+                REPLY=
+                continue;;
+            2) echo -e "\033[1;32mYou chose $optionAWS\n\033[1;36m" 
+                read -p "Enter crawler name: " input 
+                deleteImage
+                push
+                REPLY=
+                continue;;
+            3) echo -e "\033[1;32mYou chose $optionAWS\n\033[1;36m" 
+                read -p "Enter repo name: " input 
+                deleteImage
+                REPLY=
+                continue;;
+            4) echo -e "\033[1;32mYou chose $optionAWS\n\033[1;36m" 
+                read -p "Enter repo name: " input 
+                createRepo
+                REPLY=
+                continue;;
+            5) echo -e "\033[1;32mYou chose $optionAWS\n\033[1;36m" 
+                read -p "Enter repo name: " input 
+                deleteRepo
+                REPLY=
+                continue;;
+            6) echo -e "\033[1;32mYou chose $optionAWS\n\033[1;36m" 
+                showCrawlers
+                echo "Use Ctrl+Shift+C & Ctrl+Shift+V to copy/paste"
+                echo ""
+                REPLY=
+                continue;;
+            $((${#subMenuAWS[@]}+1))) echo -e "\033[1;32mMain Menu!\033[1;36m"; break;;
+            *) echo -e "\033[1;31m- $REPLY is invalid option. Try another one. -\033[1;36m";;
+            esac
+            REPLY=
+        done;;
     2) echo -e "\033[1;32mYou chose $option\n\033[1;36m" 
-        read -p "Enter crawler name: " crawler 
-        deleteImage
-        push
-        continue;;
-    3) echo -e "\033[1;32mYou chose $option\n\033[1;36m" 
-        read -p "Enter repo name: " crawler 
-        deleteImage
-        continue;;
-    4) echo -e "\033[1;32mYou chose $option\n\033[1;36m" 
-        read -p "Enter repo name: " crawler 
-        createRepo
-        continue;;
-    5) echo -e "\033[1;32mYou chose $option\n\033[1;36m" 
-        read -p "Enter repo name: " crawler 
-        deleteRepo
-        continue;;
-    6) echo -e "\033[1;32mYou chose $option\n\033[1;36m" 
-        showCrawlers
-        echo "Use Ctrl+Shift+C & Ctrl+Shift+V to copy/paste"
-        echo ""
-        continue;;
-    $((${#options[@]}+1))) echo -e "\033[1;31mGoodbye!"; break;;
+        select optionDOCKER in "${subMenuDOCKER[@]}" "Back"; do 
+            case "$REPLY" in
+            1) echo -e "\033[1;32mYou chose $optionDOCKER\n\033[1;36m" 
+                read -p "Enter absolute path to your compose file: " composeName 
+                buildCompose
+                REPLY=
+                continue;;
+            2) echo -e "\033[1;32mYou chose $optionDOCKER\n\033[1;36m" 
+                read -p "Enter absolute path to your compose file: " composeName 
+                read -p "Enter args: " args 
+                buildComposeArgs
+                REPLY=
+                continue;;
+            3) echo -e "\033[1;32mYou chose $optionDOCKER\n\033[1;36m" 
+                read -p "Enter crawler name: " input 
+                deleteLocalImage
+                REPLY=
+                continue;;
+            4) echo -e "\033[1;32mYou chose $optionDOCKER\n\033[1;36m"  
+                deleteDockerCache
+                REPLY=
+                continue;;
+            $((${#subMenuDOCKER[@]}+1))) echo -e "\033[1;32mMain Menu!\033[1;36m"; break;;
+            *) echo -e "\033[1;31m- $REPLY is invalid option. Try another one. -\033[1;36m";;
+            esac
+            REPLY=
+        done;;
+    $((${#menu[@]}+1))) echo -e "\033[1;31mGoodbye!"; break;;
     *) echo -e "\033[1;31m- $REPLY is invalid option. Try another one. -\033[1;36m";;
     esac
+    REPLY=
 done
 
 # ----------------------------------------------------------------------------
