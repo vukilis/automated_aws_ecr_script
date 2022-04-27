@@ -12,6 +12,7 @@ cd automated_aws_ecr_script
 bash automated_aws_ecr_script.sh
 ```
 ## Requirements
+* docker 
 * aws cli 
 
 > - **Your docker image must be named same as AWS repository**  
