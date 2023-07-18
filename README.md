@@ -2,7 +2,7 @@
 
                                             Automated AWS ECR SCRIPT
                                                 MadeBy: Vuk1lis™
-                     Script for automated create, push and delete AWS ECR repositories and images.
+                     Automated script for create, push and delete AWS ECR repositories and images.
                          Created and optimized for DataDrill Company https://www.datadrill.io/
 
 ## Usage
